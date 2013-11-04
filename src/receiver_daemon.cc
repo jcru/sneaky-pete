@@ -234,8 +234,18 @@ void initialize_and_run(FlagValues & flags) {
                                       flags.mysql_state_change_wait_time(),
                                       flags.skip_install_for_prepare()));
 
+    //TODO (joe.cruz) turn VolumeManager parameters to flags
+    int num_tries = 3;
+    string volume_fstype = "ext3";
+    string format_options = "-m 5";
+    int volume_format_timeout = 120;
+    VolumeManagerPtr volumeManager(new VolumeManager(num_tries,
+                                                     volume_fstype,
+                                                     format_options,
+                                                     volume_format_timeout));
+
     MessageHandlerPtr handler_mysql_app(new MySqlAppMessageHandler(
-        mysqlApp, apt_worker, monitoring));
+        mysqlApp, apt_worker, monitoring, volumeManager));
     handlers.push_back(handler_mysql_app);
 
     /* Create the Interrogator for the guest. */

@@ -8,6 +8,7 @@
 #include "nova/guest/mysql/MySqlApp.h"
 #include "nova/guest/monitoring/monitoring.h"
 #include <string>
+#include "nova/VolumeManager.h"
 
 
 namespace nova { namespace guest { namespace mysql {
@@ -43,7 +44,8 @@ namespace nova { namespace guest { namespace mysql {
             MySqlAppMessageHandler(
                 MySqlAppPtr mysqlApp,
                 nova::guest::apt::AptGuestPtr apt,
-                nova::guest::monitoring::Monitoring & monitoring);
+                nova::guest::monitoring::Monitoring & monitoring,
+                VolumeManagerPtr volumeManager);
 
             virtual ~MySqlAppMessageHandler();
 
@@ -51,10 +53,13 @@ namespace nova { namespace guest { namespace mysql {
 
             MySqlAppPtr create_mysql_app();
 
+            VolumeManagerPtr create_volume_manager();
+
         private:
             nova::guest::apt::AptGuestPtr apt;
             nova::guest::monitoring::Monitoring & monitoring;
             MySqlAppPtr mysqlApp;
+            VolumeManagerPtr volumeManager;
     };
 
 } } }

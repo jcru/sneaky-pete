@@ -322,6 +322,11 @@ unit u_nova_utils_zlib
     :   tests/nova/utils/zlib_tests.cc
     ;
 
+unit u_nova_volume
+    :   src/nova/VolumeManager.cc
+    :   u_nova_Log
+    ;
+
 
 unit u_nova_guest_HeartBeat
     :   src/nova/guest/HeartBeat.cc
@@ -556,6 +561,7 @@ unit u_nova_guest_mysql_MySqlMessageHandler
         u_nova_guest_mysql_MySqlAppStatus
         u_nova_guest_mysql_MySqlApp
         u_nova_guest_monitoring_Monitoring
+        u_nova_volume
     ;
 
 alias guest_lib
