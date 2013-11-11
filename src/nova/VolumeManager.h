@@ -23,6 +23,12 @@ private:
 
     const std::string device_path;
     const std::string mount_point;
+
+    /** Check that the device path exists.
+     * Verify that the device path has actually been created and can report
+     * it's size, only then can it be available for formatting, retry
+     * num_tries to account for the time lag.  **/
+    void check_device_exists();
 };
 
 class VolumeManager : boost::noncopyable  {

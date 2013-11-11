@@ -1,8 +1,12 @@
 #include "nova/Log.h"
+#include "nova/process.h"
 #include "nova/VolumeManager.h"
+#include <boost/assign/list_of.hpp>
 #include <string>
 
 using std::string;
+using namespace boost::assign;
+namespace process = nova::process;
 
 namespace nova {
 
@@ -47,11 +51,26 @@ VolumeDevice::~VolumeDevice() {
 }
 
 void VolumeDevice::format() {
-
+    check_device_exists();
 }
 
 void VolumeDevice::mount(const std::string mount_point) {
 
+}
+
+void VolumeDevice::check_device_exists() {
+    // TODO (joe.cruz) add retries
+    NOVA_LOG_INFO("Checking if device exists...");
+    try{
+        process::execute(list_of("/usr/bin/sudo")
+                                ("blockdev")
+                                (device_path.c_str()));
+    }
+    catch (process::ProcessException &e) {
+        NOVA_LOG_ERROR("Checking if device exists FAILED!!!");
+        // TODO (joe.cruz) create/add exception
+        // throw VolumeDeviceException(VolumeDeviceException::VOLUME_DEVICE_DOES_NOT_EXIST)
+    }
 }
 
 /**---------------------------------------------------------------------------
