@@ -29,6 +29,12 @@ private:
      * it's size, only then can it be available for formatting, retry
      * num_tries to account for the time lag.  **/
     void check_device_exists();
+
+    /** Calls mkfs to format the device at device_path.  **/
+    void format_device();
+
+    /** Checks that an unmounted volume is formatted.  **/
+    void check_format();
 };
 
 class VolumeManager : boost::noncopyable  {
