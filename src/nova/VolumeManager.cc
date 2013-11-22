@@ -36,7 +36,10 @@ class VolumeMountPoint {
         void mount(const std::string volume_fstype,
                    const std::string mount_options) {
             NOVA_LOG_INFO("Check mount point exists...");
-
+            proc::execute(list_of("/usr/bin/sudo")
+                                 ("mkdir")
+                                 ("-p")
+                                 (mount_point.c_str()));
             NOVA_LOG_INFO("Mounting Volume...");
             proc::CommandList cmds = list_of("/usr/bin/sudo")
                                             ("mount")
@@ -46,7 +49,15 @@ class VolumeMountPoint {
                                             (mount_options.c_str())
                                             (device_path.c_str())
                                             (mount_point.c_str());
-            proc::Process<proc::StdErrAndStdOut> process(cmds);
+            // proc::Process<proc::StdErrAndStdOut> process(cmds);
+            std::stringstream output;
+            try{
+                proc::execute(output, cmds);
+            }
+            catch (proc::ProcessException &e) {
+                NOVA_LOG_ERROR("Mounting Device FAILED:%s", e.what());
+                NOVA_LOG_ERROR("%s", output.str())
+            }
             // TODO (joe.cruz) expect EOF
             // TODO (joe.cruz) create/add exception
         }
@@ -91,7 +102,7 @@ class VolumeMountPoint {
                                          ("/tmp/newfstab")("/etc/fstab"));
             }
             catch (proc::ProcessException &e) {
-                NOVA_LOG_ERROR("Writing to fstab FAILED!!!");
+                NOVA_LOG_ERROR("Writing to fstab FAILED:%s", e.what());
                 // TODO (joe.cruz) create/add exception
             }
         }
@@ -143,13 +154,16 @@ void VolumeDevice::mount(const std::string mount_point) {
 void VolumeDevice::check_device_exists() {
     // TODO (joe.cruz) add retries
     NOVA_LOG_INFO("Checking if device exists...");
+    std::stringstream output;
     try{
-        proc::execute(list_of("/usr/bin/sudo")
-                             ("blockdev")
-                             (device_path.c_str()));
+        proc::execute(output, list_of("/usr/bin/sudo")
+                                     ("blockdev")
+                                     ("--getsize64")
+                                     (device_path.c_str()));
     }
     catch (proc::ProcessException &e) {
-        NOVA_LOG_ERROR("Checking if device exists FAILED!!!");
+        NOVA_LOG_ERROR("Checking if device exists FAILED:%s", e.what());
+        NOVA_LOG_ERROR("%s", output.str())
         // TODO (joe.cruz) create/add exception
         // throw VolumeDeviceException(VolumeDeviceException::VOLUME_DEVICE_DOES_NOT_EXIST)
     }
@@ -158,11 +172,19 @@ void VolumeDevice::check_device_exists() {
 void VolumeDevice::format_device() {
     NOVA_LOG_INFO("Formatting device...");
     proc::CommandList cmds = list_of("/usr/bin/sudo")
-                                    ("mkfs")("-t")
+                                    ("mkfs")("-F")("-t")
                                     (volume_fstype.c_str())
                                     (format_options.c_str())
                                     (device_path.c_str());
-    proc::Process<proc::StdErrAndStdOut> process(cmds);
+    // proc::Process<proc::StdErrAndStdOut> process(cmds);
+    std::stringstream output;
+    try{
+        proc::execute(output, cmds);
+    }
+    catch (proc::ProcessException &e) {
+        NOVA_LOG_ERROR("Formatting Device FAILED:%s", e.what());
+        NOVA_LOG_ERROR("%s", output.str())
+    }
     // TODO (joe.cruz) expect EOF
     // TODO (joe.cruz) create/add exception
 }
@@ -172,7 +194,15 @@ void VolumeDevice::check_format() {
     proc::CommandList cmds = list_of("/usr/bin/sudo")
                                     ("dumpe2fs")
                                     (device_path.c_str());
-    proc::Process<proc::StdErrAndStdOut> process(cmds);
+    // proc::Process<proc::StdErrAndStdOut> process(cmds);
+    std::stringstream output;
+    try{
+        proc::execute(output, cmds);
+    }
+    catch (proc::ProcessException &e) {
+        NOVA_LOG_ERROR("Check formatting Device FAILED:%s", e.what());
+        NOVA_LOG_ERROR("%s", output.str())
+    }
     // TODO (joe.cruz) expect patterns "has_journal", "Wrong magic number"
     // TODO (joe.cruz) create/add exception
 }
