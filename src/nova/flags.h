@@ -190,6 +190,17 @@ class FlagValues {
 
         size_t worker_thread_stack_size() const;
 
+        const char * volume_file_system_type() const;
+
+        int check_device_num_retries() const;
+
+        const char * format_options() const;
+
+        unsigned long volume_format_timeout() const;
+
+        const char * mount_options() const;
+
+
     private:
 
         FlagMapPtr map;

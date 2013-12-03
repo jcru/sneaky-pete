@@ -479,4 +479,24 @@ bool FlagValues::use_syslog() const {
     return get_flag_value<bool>(*map, "use_syslog", false);
 }
 
+const char * FlagValues::volume_file_system_type() const {
+    return map->get("volume_file_system_type", "ext3");
+}
+
+int FlagValues::check_device_num_retries() const {
+    return get_flag_value<int>(*map, "check_device_num_retries", 3);
+}
+
+const char * FlagValues::format_options() const {
+    return map->get("format_options", "-m 5");
+}
+
+unsigned long FlagValues::volume_format_timeout() const {
+    return get_flag_value(*map, "volume_format_timeout", (unsigned long) 120);
+}
+
+const char * FlagValues::mount_options() const {
+    return map->get("mount_options", "defaults,noatime");
+}
+
 } } // end nova::flags

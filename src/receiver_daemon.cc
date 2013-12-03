@@ -234,18 +234,14 @@ void initialize_and_run(FlagValues & flags) {
                                       flags.mysql_state_change_wait_time(),
                                       flags.skip_install_for_prepare()));
 
-    //TODO (joe.cruz) turn VolumeManager parameters to flags
-    // Taken from openstack/trove defaults
-    int num_tries = 3;
-    string volume_fstype = "ext3";
-    string format_options = "-m 5";
-    int volume_format_timeout = 120;
-    string mount_options = "defaults,noatime";
-    VolumeManagerPtr volumeManager(new VolumeManager(num_tries,
-                                                     volume_fstype,
-                                                     format_options,
-                                                     volume_format_timeout,
-                                                     mount_options));
+    /* Create Volume Manager. */
+    VolumeManagerPtr volumeManager(new VolumeManager(
+        flags.check_device_num_retries(),
+        flags.volume_file_system_type(),
+        flags.format_options(),
+        flags.volume_format_timeout(),
+        flags.mount_options()
+    ));
 
     MessageHandlerPtr handler_mysql_app(new MySqlAppMessageHandler(
         mysqlApp, apt_worker, monitoring, volumeManager));

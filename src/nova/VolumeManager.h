@@ -71,10 +71,10 @@ private:
 class VolumeManager : boost::noncopyable  {
 public:
     VolumeManager(const int num_tries_device_exists,
-                  const std::string volume_fstype,
-                  const std::string format_options,
+                  const std::string & volume_fstype,
+                  const std::string & format_options,
                   const int volume_format_timeout,
-                  const std::string mount_options);
+                  const std::string & mount_options);
 
     ~VolumeManager();
 

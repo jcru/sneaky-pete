@@ -35,7 +35,6 @@ class VolumeMountPoint {
 
         void mount(const std::string volume_fstype,
                    const std::string mount_options) {
-            NOVA_LOG_INFO("Check mount point exists...");
             proc::execute(list_of("/usr/bin/sudo")
                                  ("mkdir")
                                  ("-p")
@@ -215,10 +214,10 @@ void VolumeDevice::check_format() {
 
 VolumeManager::VolumeManager(
     const int num_tries_device_exists,
-    const std::string volume_fstype,
-    const std::string format_options,
+    const std::string & volume_fstype,
+    const std::string & format_options,
     const int volume_format_timeout,
-    const std::string mount_options)
+    const std::string & mount_options)
 :   num_tries_device_exists(num_tries_device_exists),
     volume_fstype(volume_fstype),
     format_options(format_options),
