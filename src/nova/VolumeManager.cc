@@ -121,17 +121,9 @@ class VolumeMountPoint {
 
 VolumeDevice::VolumeDevice(
     const string device_path,
-    const unsigned int num_tries_device_exists,
-    const std::string volume_fstype,
-    const std::string format_options,
-    const unsigned int volume_format_timeout,
-    const std::string mount_options)
+    const VolumeManager & manager)
 :   device_path(device_path),
-    num_tries_device_exists(num_tries_device_exists),
-    volume_fstype(volume_fstype),
-    format_options(format_options),
-    volume_format_timeout(volume_format_timeout),
-    mount_options(mount_options)
+    manager(manager)
 {
 }
 
@@ -146,15 +138,18 @@ void VolumeDevice::format() {
 
 void VolumeDevice::mount(const std::string mount_point) {
     VolumeMountPoint volume_mount_point(device_path, mount_point);
-    volume_mount_point.mount(volume_fstype, mount_options);
-    volume_mount_point.write_to_fstab(volume_fstype, mount_options);
+    std::string volume_filesystem_type = manager.get_volume_fstype();
+    std::string mount_options = manager.get_mount_options();
+    volume_mount_point.mount(volume_filesystem_type, mount_options);
+    volume_mount_point.write_to_fstab(volume_filesystem_type, mount_options);
 }
 
 void VolumeDevice::check_device_exists() {
     NOVA_LOG_INFO("Checking if device exists...");
     unsigned int retries = 0;
+    unsigned int max_retries =  manager.get_num_tries_device_exists();
 
-    while(retries <= num_tries_device_exists) {
+    while(retries <= max_retries) {
         std::stringstream output;
         try{
             proc::execute(output, list_of("/usr/bin/sudo")
@@ -165,7 +160,7 @@ void VolumeDevice::check_device_exists() {
         }
         catch (proc::ProcessException &e) {
             NOVA_LOG_INFO("Checking if device exists FAILED: %s", e.what())
-            if (retries <= num_tries_device_exists) {
+            if (retries <= max_retries) {
                 retries++;
             } else {
                 NOVA_LOG_ERROR("Checking if device exists FAILED after (%u) retries", retries);
@@ -178,6 +173,8 @@ void VolumeDevice::check_device_exists() {
 
 void VolumeDevice::format_device() {
     NOVA_LOG_INFO("Formatting device...");
+    std::string volume_fstype = manager.get_volume_fstype();
+    std::string format_options = manager.get_format_options();
     proc::CommandList cmds = list_of("/usr/bin/sudo")
                                     ("mkfs")("-F")("-t")
                                     (volume_fstype.c_str())
@@ -237,13 +234,28 @@ VolumeManager::VolumeManager(
 VolumeManager::~VolumeManager() {
 }
 
+unsigned int VolumeManager::get_num_tries_device_exists() const {
+    return num_tries_device_exists;
+}
+
+std::string VolumeManager::get_volume_fstype() const {
+    return volume_fstype;
+}
+
+std::string VolumeManager::get_format_options() const {
+    return format_options;
+}
+
+unsigned int VolumeManager::get_volume_format_timeout() const {
+    return volume_format_timeout;
+}
+
+std::string VolumeManager::get_mount_options() const {
+    return mount_options;
+}
+
 VolumeDevice VolumeManager::create_volume_device(const string device_path) {
-    return VolumeDevice(device_path,
-                        num_tries_device_exists,
-                        volume_fstype,
-                        format_options,
-                        volume_format_timeout,
-                        mount_options);
+    return VolumeDevice(device_path, *this);
 }
 
 /**---------------------------------------------------------------------------

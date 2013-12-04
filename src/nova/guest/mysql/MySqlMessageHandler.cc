@@ -525,7 +525,7 @@ JsonDataPtr MySqlAppMessageHandler::handle_message(const GuestInput & input) {
         MySqlAppPtr app = this->create_mysql_app();
         const auto config_contents = input.args->get_string("config_contents");
         const auto overrides = input.args->get_optional_string("overrides");
-        //Mount volume?
+        // Mount volume
         const auto device_path = input.args->get_optional_string("device_path");
         const auto mount_point = input.args->get_optional_string("mount_point");
         if (device_path && device_path.get().length() > 0) {
