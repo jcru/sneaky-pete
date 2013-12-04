@@ -92,6 +92,26 @@ private:
 
 typedef boost::shared_ptr<VolumeManager> VolumeManagerPtr;
 
+class VolumeException : public std::exception {
+
+    public:
+        enum Code {
+            DEVICE_DOES_NOT_EXIST,
+            FORMAT_DEVICE_FAILURE,
+            CHECK_FORMAT_FAILURE,
+            MOUNT_FAILURE,
+            WRITE_TO_FSTAB_FAILURE
+        };
+
+        VolumeException(Code code) throw();
+
+        virtual ~VolumeException() throw();
+
+        const Code code;
+
+        virtual const char * what() const throw();
+};
+
 } // end namespace nova
 
 #endif // __NOVA_VOLUME_MANAGER_H

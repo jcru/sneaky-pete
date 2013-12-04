@@ -52,13 +52,13 @@ class VolumeMountPoint {
             std::stringstream output;
             try{
                 proc::execute(output, cmds);
+                // TODO (joe.cruz) expect EOF
             }
             catch (proc::ProcessException &e) {
                 NOVA_LOG_ERROR("Mounting Device FAILED:%s", e.what());
                 NOVA_LOG_ERROR("%s", output.str())
+                throw VolumeException(VolumeException::MOUNT_FAILURE);
             }
-            // TODO (joe.cruz) expect EOF
-            // TODO (joe.cruz) create/add exception
         }
 
         void write_to_fstab(const std::string volume_fstype,
@@ -102,7 +102,7 @@ class VolumeMountPoint {
             }
             catch (proc::ProcessException &e) {
                 NOVA_LOG_ERROR("Writing to fstab FAILED:%s", e.what());
-                // TODO (joe.cruz) create/add exception
+                throw VolumeException(VolumeException::WRITE_TO_FSTAB_FAILURE);
             }
         }
 
@@ -163,8 +163,7 @@ void VolumeDevice::check_device_exists() {
     catch (proc::ProcessException &e) {
         NOVA_LOG_ERROR("Checking if device exists FAILED:%s", e.what());
         NOVA_LOG_ERROR("%s", output.str())
-        // TODO (joe.cruz) create/add exception
-        // throw VolumeDeviceException(VolumeDeviceException::VOLUME_DEVICE_DOES_NOT_EXIST)
+        throw VolumeException(VolumeException::DEVICE_DOES_NOT_EXIST);
     }
 }
 
@@ -179,13 +178,13 @@ void VolumeDevice::format_device() {
     std::stringstream output;
     try{
         proc::execute(output, cmds);
+        // TODO (joe.cruz) expect EOF
     }
     catch (proc::ProcessException &e) {
         NOVA_LOG_ERROR("Formatting Device FAILED:%s", e.what());
-        NOVA_LOG_ERROR("%s", output.str())
+        NOVA_LOG_ERROR("%s", output.str());
+        throw VolumeException(VolumeException::FORMAT_DEVICE_FAILURE);
     }
-    // TODO (joe.cruz) expect EOF
-    // TODO (joe.cruz) create/add exception
 }
 
 void VolumeDevice::check_format() {
@@ -197,13 +196,13 @@ void VolumeDevice::check_format() {
     std::stringstream output;
     try{
         proc::execute(output, cmds);
+        // TODO (joe.cruz) expect patterns "has_journal", "Wrong magic number"
     }
     catch (proc::ProcessException &e) {
         NOVA_LOG_ERROR("Check formatting Device FAILED:%s", e.what());
-        NOVA_LOG_ERROR("%s", output.str())
+        NOVA_LOG_ERROR("%s", output.str());
+        throw VolumeException(VolumeException::CHECK_FORMAT_FAILURE);
     }
-    // TODO (joe.cruz) expect patterns "has_journal", "Wrong magic number"
-    // TODO (joe.cruz) create/add exception
 }
 
 
@@ -238,5 +237,32 @@ VolumeDevice VolumeManager::create_volume_device(const string device_path) {
                         mount_options);
 }
 
+/**---------------------------------------------------------------------------
+ *- VolumeException
+ *---------------------------------------------------------------------------*/
+
+VolumeException::VolumeException(Code code) throw()
+: code(code) {
+}
+
+VolumeException::~VolumeException() throw() {
+}
+
+const char * VolumeException::what() const throw() {
+    switch(code) {
+        case DEVICE_DOES_NOT_EXIST:
+            return "Device does not exist after retries.";
+        case FORMAT_DEVICE_FAILURE:
+            return "There was a failure while formatting device.";
+        case CHECK_FORMAT_FAILURE:
+            return "There was a failure checking format of device.";
+        case MOUNT_FAILURE:
+            return "There was a failure mounting device.";
+        case WRITE_TO_FSTAB_FAILURE:
+            return "There was a failure writing to fstab.";
+        default:
+            return "An error occurred.";
+    }
+}
 
 } // end namespace nova
