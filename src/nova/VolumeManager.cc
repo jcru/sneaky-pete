@@ -63,9 +63,9 @@ class VolumeMountPoint {
 
         void write_to_fstab(const std::string volume_fstype,
                             const std::string mount_options) {
-            // std::string fstab_file = "/etc/fstab"
-            // std::string fstab_original_file "/etc/fstab.orig"
-            // std::string new_fstab_file = "/tmp/newfstab"
+            const std::string fstab_file_name = "/etc/fstab";
+            const std::string fstab_original_file_name = "/etc/fstab.orig";
+            const std::string new_fstab_file_name = "/tmp/newfstab";
 
             std::string fstab_line = str(format(
                 "%s\t%s\t%s\t%s\t0\t0")
@@ -78,27 +78,30 @@ class VolumeMountPoint {
             NOVA_LOG_INFO("Writing to fstab...");
             try {
                     proc::execute(list_of("/usr/bin/sudo")("cp")
-                                         ("/etc/fstab")("/etc/fstab.orig"));
+                                         (fstab_file_name.c_str())
+                                         (fstab_original_file_name.c_str()));
                     proc::execute(list_of("/usr/bin/sudo")("cp")
-                                         ("/etc/fstab")("/tmp/newfstab"));
+                                         (fstab_file_name.c_str())
+                                         (new_fstab_file_name.c_str()));
                     proc::execute(list_of("/usr/bin/sudo")("chmod")
-                                         ("666")("/tmp/newfstab"));
+                                         ("666")(new_fstab_file_name.c_str()));
 
                     ofstream tmp_new_fstab_file;
                     // Open file in append mode
-                    tmp_new_fstab_file.open("/tmp/newfstab", ios::app);
+                    tmp_new_fstab_file.open(new_fstab_file_name.c_str(), ios::app);
                     if (!tmp_new_fstab_file.good()) {
                         NOVA_LOG_ERROR("Couldn't open tmp new fstab file");
-                        // TODO (joe.cruz) create/add exception
+                        throw VolumeException(VolumeException::WRITE_TO_FSTAB_FAILURE);
                     }
                     tmp_new_fstab_file << endl;
                     tmp_new_fstab_file << fstab_line << endl;
                     tmp_new_fstab_file.close();
 
                     proc::execute(list_of("/usr/bin/sudo")("chmod")
-                                         ("640")("/tmp/newfstab"));
+                                         ("640")(new_fstab_file_name.c_str()));
                     proc::execute(list_of("/usr/bin/sudo")("mv")
-                                         ("/tmp/newfstab")("/etc/fstab"));
+                                         (new_fstab_file_name.c_str())
+                                         (fstab_file_name.c_str()));
             }
             catch (proc::ProcessException &e) {
                 NOVA_LOG_ERROR("Writing to fstab FAILED:%s", e.what());
