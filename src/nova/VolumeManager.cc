@@ -121,10 +121,10 @@ class VolumeMountPoint {
 
 VolumeDevice::VolumeDevice(
     const string device_path,
-    const int num_tries_device_exists,
+    const unsigned int num_tries_device_exists,
     const std::string volume_fstype,
     const std::string format_options,
-    const int volume_format_timeout,
+    const unsigned int volume_format_timeout,
     const std::string mount_options)
 :   device_path(device_path),
     num_tries_device_exists(num_tries_device_exists),
@@ -151,19 +151,28 @@ void VolumeDevice::mount(const std::string mount_point) {
 }
 
 void VolumeDevice::check_device_exists() {
-    // TODO (joe.cruz) add retries
     NOVA_LOG_INFO("Checking if device exists...");
-    std::stringstream output;
-    try{
-        proc::execute(output, list_of("/usr/bin/sudo")
-                                     ("blockdev")
-                                     ("--getsize64")
-                                     (device_path.c_str()));
-    }
-    catch (proc::ProcessException &e) {
-        NOVA_LOG_ERROR("Checking if device exists FAILED:%s", e.what());
-        NOVA_LOG_ERROR("%s", output.str())
-        throw VolumeException(VolumeException::DEVICE_DOES_NOT_EXIST);
+    unsigned int retries = 0;
+
+    while(retries <= num_tries_device_exists) {
+        std::stringstream output;
+        try{
+            proc::execute(output, list_of("/usr/bin/sudo")
+                                         ("blockdev")
+                                         ("--getsize64")
+                                         (device_path.c_str()));
+            return;
+        }
+        catch (proc::ProcessException &e) {
+            NOVA_LOG_INFO("Checking if device exists FAILED: %s", e.what())
+            if (retries <= num_tries_device_exists) {
+                retries++;
+            } else {
+                NOVA_LOG_ERROR("Checking if device exists FAILED after (%u) retries", retries);
+                NOVA_LOG_ERROR("%s", output.str())
+                throw VolumeException(VolumeException::DEVICE_DOES_NOT_EXIST);
+            }
+        }
     }
 }
 
@@ -212,10 +221,10 @@ void VolumeDevice::check_format() {
  *---------------------------------------------------------------------------*/
 
 VolumeManager::VolumeManager(
-    const int num_tries_device_exists,
+    const unsigned int num_tries_device_exists,
     const std::string & volume_fstype,
     const std::string & format_options,
-    const int volume_format_timeout,
+    const unsigned int volume_format_timeout,
     const std::string & mount_options)
 :   num_tries_device_exists(num_tries_device_exists),
     volume_fstype(volume_fstype),
