@@ -18,15 +18,16 @@ public:
 
     ~VolumeDevice();
 
+    /** This runs the entire format process which includes:
+      * check_device_exists
+      * format_device
+      * check_format **/
     void format();
 
+    /** This runs the entire mount process which includes:
+      * mount device
+      * write to fstab **/
     void mount(const std::string mount_point);
-
-
-private:
-
-    const std::string device_path;
-    const VolumeManager & manager;
 
     /** Check that the device path exists.
      * Verify that the device path has actually been created and can report
@@ -39,6 +40,11 @@ private:
 
     /** Checks that an unmounted volume is formatted.  **/
     void check_format();
+
+private:
+
+    const std::string device_path;
+    const VolumeManager & manager;
 
 };
 

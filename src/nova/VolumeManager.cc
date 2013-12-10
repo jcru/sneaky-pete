@@ -35,11 +35,13 @@ class VolumeMountPoint {
 
         void mount(const std::string volume_fstype,
                    const std::string mount_options) {
+            // Create directory if it doesn't exist already
             proc::execute(list_of("/usr/bin/sudo")
                                  ("mkdir")
                                  ("-p")
                                  (mount_point.c_str()));
             NOVA_LOG_INFO("Mounting Volume...");
+            // TODO (joe.cruz) if no mount_options then no '-o' flag?
             proc::CommandList cmds = list_of("/usr/bin/sudo")
                                             ("mount")
                                             ("-t")
@@ -48,11 +50,9 @@ class VolumeMountPoint {
                                             (mount_options.c_str())
                                             (device_path.c_str())
                                             (mount_point.c_str());
-            // proc::Process<proc::StdErrAndStdOut> process(cmds);
             std::stringstream output;
             try{
                 proc::execute(output, cmds);
-                // TODO (joe.cruz) expect EOF
             }
             catch (proc::ProcessException &e) {
                 NOVA_LOG_ERROR("Mounting Device FAILED:%s", e.what());
@@ -149,10 +149,12 @@ void VolumeDevice::mount(const std::string mount_point) {
 
 void VolumeDevice::check_device_exists() {
     NOVA_LOG_INFO("Checking if device exists...");
-    unsigned int retries = 0;
+    unsigned int attempts = 0;
     unsigned int max_retries =  manager.get_num_tries_device_exists();
+    // Take into account first attempt for max attempts
+    unsigned int max_attempts = max_retries + 1;
 
-    while(retries <= max_retries) {
+    while(attempts < max_attempts) {
         std::stringstream output;
         try{
             proc::execute(output, list_of("/usr/bin/sudo")
@@ -162,12 +164,11 @@ void VolumeDevice::check_device_exists() {
             return;
         }
         catch (proc::ProcessException &e) {
-            NOVA_LOG_INFO("Checking if device exists FAILED: %s", e.what())
-            if (retries <= max_retries) {
-                retries++;
-            } else {
-                NOVA_LOG_ERROR("Checking if device exists FAILED after (%u) retries", retries);
-                NOVA_LOG_ERROR("%s", output.str())
+            NOVA_LOG_INFO("Checking if device exists FAILED: %s", e.what());
+            attempts++;
+            if (attempts >= max_attempts) {
+                NOVA_LOG_ERROR("Checking if device exists FAILED after (%u) attempts", attempts);
+                NOVA_LOG_ERROR("%s", output.str());
                 throw VolumeException(VolumeException::DEVICE_DOES_NOT_EXIST);
             }
         }
@@ -183,7 +184,6 @@ void VolumeDevice::format_device() {
                                     (volume_fstype.c_str())
                                     (format_options.c_str())
                                     (device_path.c_str());
-    // proc::Process<proc::StdErrAndStdOut> process(cmds);
     std::stringstream output;
     try{
         proc::execute(output, cmds);

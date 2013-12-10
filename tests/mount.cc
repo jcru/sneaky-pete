@@ -13,27 +13,16 @@ using nova::VolumeDevice;
 
 int main(int argc, char **argv)
 {
-    // FlagValues flags;
     LogApiScope log(LogOptions::simple());
 
-    if (argc < 4) {
-        cerr << "Usage: " << (argc > 0 ? argv[0] : "format_and_mount")
+    if (argc < 3) {
+        cerr << "Usage: " << (argc > 0 ? argv[0] : "mount_file")
         << " device_path mount_point" << endl;
         return 1;
     }
 
-    const string command = argv[1]
-    const string device_path = argv[2];
-    const string mount_point = argv[3];
-
-    if (command == "mount") {
-
-    } else if (command == "write_to_fstab") {
-
-    } else {
-        cerr << "Valid commands: mount, write_to_fstab" << endl;
-        return 1;
-    }
+    const string device_path = argv[1];
+    const string mount_point = argv[2];
 
     const unsigned int num_tries_device_exists = 3;
     const string volume_fstype = "ext3";
@@ -43,20 +32,17 @@ int main(int argc, char **argv)
 
     /* Create Volume Manager. */
     VolumeManager volumeManager(
-        // flags.check_device_num_retries(),
         num_tries_device_exists,
-        // flags.volume_file_system_type(),
         volume_fstype,
-        // flags.format_options(),
         format_options,
-        // flags.volume_format_timeout(),
         volume_format_timeout,
-        // flags.mount_options()
         mount_options
     );
 
+    NOVA_LOG_INFO("Creating volume device with device_path: %s", device_path.c_str());
     VolumeDevice vol_device = volumeManager.create_volume_device(device_path);
 
+    NOVA_LOG_INFO("Mounting volume device to: %s", mount_point.c_str());
     vol_device.mount(mount_point);
 
     NOVA_LOG_INFO("Mounted the volume.");

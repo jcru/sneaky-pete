@@ -395,6 +395,8 @@ unit u_nova_volume
     :   u_nova_Log
         u_nova_process
     :   tests/nova/guest/volume_tests.cc
+    :   <define>BOOST_TEST_DYN_LINK
+        <testing.launcher>"BOOST_TEST_CATCH_SYSTEM_ERRORS=no "
     ;
 
 unit u_nova_guest_mysql_MySqlGuestException
