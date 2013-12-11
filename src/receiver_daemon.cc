@@ -236,15 +236,27 @@ void initialize_and_run(FlagValues & flags) {
 
     /* Create Volume Manager. */
     VolumeManagerPtr volumeManager(new VolumeManager(
-        flags.check_device_num_retries(),
+        flags.volume_check_device_num_retries(),
         flags.volume_file_system_type(),
-        flags.format_options(),
+        flags.volume_format_options(),
         flags.volume_format_timeout(),
-        flags.mount_options()
+        flags.volume_mount_options()
     ));
 
-    MessageHandlerPtr handler_mysql_app(new MySqlAppMessageHandler(
-        mysqlApp, apt_worker, monitoring, volumeManager));
+    /** Sneaky Pete formats and mounts volumes based on the bool flag
+      *'volume_format_and_mount' which is passed to MySqlAppMessageHandler which
+      * uses the flag to decide weather to format/mount a volume during the
+      * prepare call */
+    /** TODO (joe.cruz) There has to be a better way of enabling sneaky pete to
+      * format/mount a volume and to create the volume manager based on that.
+      * I did this because currently flags can only be retrived from
+      * receiver_daemon so the volumeManager has to be created here. */
+    MessageHandlerPtr handler_mysql_app(
+        new MySqlAppMessageHandler(mysqlApp,
+                                   apt_worker,
+                                   monitoring,
+                                   flags.volume_format_and_mount(),
+                                   volumeManager));
     handlers.push_back(handler_mysql_app);
 
     /* Create the Interrogator for the guest. */

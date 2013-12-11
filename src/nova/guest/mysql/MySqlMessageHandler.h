@@ -45,6 +45,7 @@ namespace nova { namespace guest { namespace mysql {
                 MySqlAppPtr mysqlApp,
                 nova::guest::apt::AptGuestPtr apt,
                 nova::guest::monitoring::Monitoring & monitoring,
+                bool format_and_mount_volume_enabled,
                 VolumeManagerPtr volumeManager);
 
             virtual ~MySqlAppMessageHandler();
@@ -59,6 +60,7 @@ namespace nova { namespace guest { namespace mysql {
             nova::guest::apt::AptGuestPtr apt;
             nova::guest::monitoring::Monitoring & monitoring;
             MySqlAppPtr mysqlApp;
+            bool format_and_mount_volume_enabled;
             VolumeManagerPtr volumeManager;
     };
 
