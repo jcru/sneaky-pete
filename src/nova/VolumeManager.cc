@@ -61,6 +61,35 @@ class VolumeMountPoint {
             }
         }
 
+        void unmount() {
+            NOVA_LOG_INFO("Unmounting Volume...");
+
+            proc::CommandList cmds = list_of("/usr/bin/sudo")
+                                            ("umount")
+                                            (mount_point.c_str())
+                                            ("-l");
+
+            std::stringstream output;
+            try{
+                proc::execute(output, cmds);
+            }
+            catch (proc::ProcessException &e) {
+                NOVA_LOG_ERROR("Unmounting Device FAILED:%s", e.what());
+                NOVA_LOG_ERROR("%s", output.str())
+                throw VolumeException(VolumeException::UNMOUNT_FAILURE);
+            }
+        }
+
+        void remove_from_fstab() {
+            std::string device_mount_fstab_line = str(format(
+                "%s\t%s")
+                % device_path.c_str()
+                % mount_point.c_str()
+            );
+
+
+        }
+
         void write_to_fstab(const std::string volume_fstype,
                             const std::string mount_options) {
             const std::string fstab_file_name = "/etc/fstab";
@@ -214,6 +243,53 @@ void VolumeDevice::check_format() {
     }
 }
 
+void VolumeDevice::check_filesystem() {
+    NOVA_LOG_INFO("Checking filesystem for device...");
+
+    proc::CommandList cmds = list_of("/usr/bin/sudo")
+                                    ("e2fsck")
+                                    ("-f")("-n")
+                                    (device_path.c_str());
+
+    std::stringstream output;
+    try{
+        proc::execute(output, cmds);
+    }
+    catch (proc::ProcessException &e) {
+        NOVA_LOG_ERROR("Checking Device filesystem FAILED:%s", e.what());
+        NOVA_LOG_ERROR("%s", output.str());
+        throw VolumeException(VolumeException::CHECK_FS_FAILURE);
+    }
+}
+
+void VolumeDevice::unmount(const std::string mount_point) {
+    VolumeMountPoint volume_mount_point(device_path, mount_point);
+    // std::string volume_filesystem_type = manager.get_volume_fstype();
+    // std::string mount_options = manager.get_mount_options();
+    volume_mount_point.unmount();
+    volume_mount_point.remove_from_fstab();
+}
+
+void VolumeDevice::resize_fs() {
+    NOVA_LOG_INFO("Resizing filesystem for device...");
+
+    // check filesystem with e2fsck
+    check_filesystem();
+
+    proc::CommandList cmds = list_of("/usr/bin/sudo")
+                                    ("resize2fs")
+                                    (device_path.c_str());
+
+    std::stringstream output;
+    try{
+        proc::execute(output, cmds);
+    }
+    catch (proc::ProcessException &e) {
+        NOVA_LOG_ERROR("Resizing Device filesystem FAILED:%s", e.what());
+        NOVA_LOG_ERROR("%s", output.str());
+        throw VolumeException(VolumeException::RESIZE_FS_FAILURE);
+    }
+}
 
 
 /**---------------------------------------------------------------------------
@@ -284,6 +360,12 @@ const char * VolumeException::what() const throw() {
             return "There was a failure mounting device.";
         case WRITE_TO_FSTAB_FAILURE:
             return "There was a failure writing to fstab.";
+        case UNMOUNT_FAILURE:
+            return "There was a failure Unmounting device.";
+        case CHECK_FS_FAILURE:
+            return "There was a failure checking the filesystem.";
+        case RESIZE_FS_FAILURE:
+            return "There was a failure resize filesystem.";
         default:
             return "An error occurred.";
     }

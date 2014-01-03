@@ -41,6 +41,17 @@ public:
     /** Checks that an unmounted volume is formatted.  **/
     void check_format();
 
+    /** Calls e2fsck to check filesystem.  **/
+    void check_filesystem();
+
+    /** This runs the entire unmount process which includes:
+      * unmount device
+      * remove from fstab **/
+    void unmount(const std::string mount_point);
+
+    /** Calls resize2fs to resize the filesystem.  **/
+    void resize_fs();
+
 private:
 
     const std::string device_path;
@@ -90,7 +101,10 @@ class VolumeException : public std::exception {
             FORMAT_DEVICE_FAILURE,
             CHECK_FORMAT_FAILURE,
             MOUNT_FAILURE,
-            WRITE_TO_FSTAB_FAILURE
+            WRITE_TO_FSTAB_FAILURE,
+            UNMOUNT_FAILURE,
+            CHECK_FS_FAILURE,
+            RESIZE_FS_FAILURE
         };
 
         VolumeException(Code code) throw();
