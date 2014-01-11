@@ -26,8 +26,8 @@ public:
 
     /** This runs the entire mount process which includes:
       * mount device
-      * write to fstab **/
-    void mount(const std::string mount_point);
+      * IF specified write to fstab after mounting  **/
+    void mount(const std::string mount_point, bool write_to_fstab = false);
 
     /** Check that the device path exists.
      * Verify that the device path has actually been created and can report
@@ -42,15 +42,15 @@ public:
     void check_format();
 
     /** Calls e2fsck to check filesystem.  **/
-    void check_filesystem();
+    void check_filesystem(const std::string mount_point);
 
     /** This runs the entire unmount process which includes:
       * unmount device
-      * remove from fstab **/
+      * THIS DOES NOT REMOVE FROM FSTAB FILE **/
     void unmount(const std::string mount_point);
 
     /** Calls resize2fs to resize the filesystem.  **/
-    void resize_fs();
+    void resize_fs(const std::string mount_point);
 
 private:
 

@@ -848,3 +848,12 @@ exe unmount_file
 
     :   <linkflags>$(EXE_LINK_FLAGS)
     ;
+
+exe resizefs_file
+    :   pch
+        u_nova_volume
+        u_nova_Log
+        tests/resize_fs.cc
+
+    :   <linkflags>$(EXE_LINK_FLAGS)
+    ;

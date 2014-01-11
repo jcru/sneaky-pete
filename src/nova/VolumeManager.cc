@@ -16,25 +16,6 @@ namespace nova {
 
 namespace {  // Begin anonymous namespace
 
-/**---------------------------------------------------------------------------
- *- FstabFile
- *---------------------------------------------------------------------------*/
-
-class FstabFile {
-    public:
-        FstabFile(
-            const std::string fstab_file_path = "/etc/fstab")
-        :   fstab_file_path(fstab_file_path)
-        {
-        }
-
-        ~FstabFile() {
-        }
-
-    private:
-        const std::string fstab_file_path;
-};
-
 
 /**---------------------------------------------------------------------------
  *- VolumeMountPoint
@@ -148,55 +129,6 @@ class VolumeMountPoint {
             }
         }
 
-        void remove_from_fstab() {
-            NOVA_LOG_INFO("Removing from fstab...");
-            const std::string fstab_file_name = "/etc/fstab";
-            const std::string new_fstab_file_name = "/tmp/newfstab";
-
-            try {
-                proc::execute(list_of("/usr/bin/sudo")("chmod")
-                                     ("666")(fstab_file_name.c_str()));
-
-                ifstream fstab_file;
-                fstab_file.open(fstab_file_name);
-                if (!fstab_file.is_open()) {
-                    NOVA_LOG_ERROR("Couldn't open fstab file");
-                    throw VolumeException(VolumeException::WRITE_TO_FSTAB_FAILURE);
-                }
-
-                ofstream tmp_new_fstab_file;
-                // Open file in append mode
-                tmp_new_fstab_file.open(new_fstab_file_name.c_str(), ios::app);
-                if (!tmp_new_fstab_file.good()) {
-                    NOVA_LOG_ERROR("Couldn't open tmp new fstab file");
-                    throw VolumeException(VolumeException::WRITE_TO_FSTAB_FAILURE);
-                }
-
-                std::string line;
-                while(getline(fstab_file, line)) {
-                    // if the fstab mount line does not have the mount_point
-                    // do not add back (remove)
-                    if (line.find(mount_point) == std::string::npos) {
-                        tmp_new_fstab_file << line << endl;
-                    }
-                }
-
-                tmp_new_fstab_file.close();
-                fstab_file.close();
-
-                proc::execute(list_of("/usr/bin/sudo")("chmod")
-                                     ("640")(new_fstab_file_name.c_str()));
-                proc::execute(list_of("/usr/bin/sudo")("mv")
-                                     (new_fstab_file_name.c_str())
-                                     (fstab_file_name.c_str()));
-
-            }
-            catch (proc::ProcessException &e) {
-                NOVA_LOG_ERROR("Writing to fstab FAILED:%s", e.what());
-                throw VolumeException(VolumeException::WRITE_TO_FSTAB_FAILURE);
-            }
-
-        }
 
     private:
 
@@ -229,12 +161,14 @@ void VolumeDevice::format() {
     check_format();
 }
 
-void VolumeDevice::mount(const std::string mount_point) {
+void VolumeDevice::mount(const std::string mount_point, bool write_to_fstab) {
     VolumeMountPoint volume_mount_point(device_path, mount_point);
     std::string volume_filesystem_type = manager.get_volume_fstype();
     std::string mount_options = manager.get_mount_options();
     volume_mount_point.mount(volume_filesystem_type, mount_options);
-    volume_mount_point.write_to_fstab(volume_filesystem_type, mount_options);
+    if (write_to_fstab) {
+        volume_mount_point.write_to_fstab(volume_filesystem_type, mount_options);
+    }
 }
 
 void VolumeDevice::check_device_exists() {
@@ -304,7 +238,7 @@ void VolumeDevice::check_format() {
     }
 }
 
-void VolumeDevice::check_filesystem() {
+void VolumeDevice::check_filesystem(const std::string mount_point) {
     NOVA_LOG_INFO("Checking filesystem for device...");
 
     proc::CommandList cmds = list_of("/usr/bin/sudo")
@@ -325,17 +259,14 @@ void VolumeDevice::check_filesystem() {
 
 void VolumeDevice::unmount(const std::string mount_point) {
     VolumeMountPoint volume_mount_point(device_path, mount_point);
-    // std::string volume_filesystem_type = manager.get_volume_fstype();
-    // std::string mount_options = manager.get_mount_options();
     volume_mount_point.unmount();
-    volume_mount_point.remove_from_fstab();
 }
 
-void VolumeDevice::resize_fs() {
+void VolumeDevice::resize_fs(const std::string mount_point) {
     NOVA_LOG_INFO("Resizing filesystem for device...");
 
     // check filesystem with e2fsck
-    check_filesystem();
+    check_filesystem(mount_point);
 
     proc::CommandList cmds = list_of("/usr/bin/sudo")
                                     ("resize2fs")
