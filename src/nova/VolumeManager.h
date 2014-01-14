@@ -41,7 +41,7 @@ public:
     /** Checks that an unmounted volume is formatted.  **/
     void check_format();
 
-    /** Calls e2fsck to check filesystem.  **/
+    /** Calls e2fsck to check device filesystem.  **/
     void check_filesystem(const std::string mount_point);
 
     /** This runs the entire unmount process which includes:
@@ -49,8 +49,12 @@ public:
       * THIS DOES NOT REMOVE FROM FSTAB FILE **/
     void unmount(const std::string mount_point);
 
-    /** Calls resize2fs to resize the filesystem.  **/
+    /** Calls resize2fs to resize the device filesystem.  **/
     void resize_fs(const std::string mount_point);
+
+    /** Returns true if the path has a device mounted to it by
+      * checking /etc/mtab  **/
+    bool is_mount(const std::string path);
 
 private:
 
@@ -104,7 +108,8 @@ class VolumeException : public std::exception {
             WRITE_TO_FSTAB_FAILURE,
             UNMOUNT_FAILURE,
             CHECK_FS_FAILURE,
-            RESIZE_FS_FAILURE
+            RESIZE_FS_FAILURE,
+            CHECK_IF_MOUNTED_FAILURE
         };
 
         VolumeException(Code code) throw();

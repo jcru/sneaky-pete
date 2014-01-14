@@ -248,7 +248,13 @@ void VolumeDevice::check_filesystem(const std::string mount_point) {
 
     std::stringstream output;
     try{
-        proc::execute(output, cmds);
+        // Check if the device is currently mounted to the mount_point
+        // e2fsck should NOT be run on a device that is mounted
+        if (! is_mount(mount_point)) {
+            proc::execute(output, cmds);
+        } else {
+            NOVA_LOG_INFO("Not running e2fsck because this device is mounted.")
+        }
     }
     catch (proc::ProcessException &e) {
         NOVA_LOG_ERROR("Checking Device filesystem FAILED:%s", e.what());
@@ -265,7 +271,6 @@ void VolumeDevice::unmount(const std::string mount_point) {
 void VolumeDevice::resize_fs(const std::string mount_point) {
     NOVA_LOG_INFO("Resizing filesystem for device...");
 
-    // check filesystem with e2fsck
     check_filesystem(mount_point);
 
     proc::CommandList cmds = list_of("/usr/bin/sudo")
@@ -281,6 +286,28 @@ void VolumeDevice::resize_fs(const std::string mount_point) {
         NOVA_LOG_ERROR("%s", output.str());
         throw VolumeException(VolumeException::RESIZE_FS_FAILURE);
     }
+}
+
+bool VolumeDevice::is_mount(const std::string path) {
+    // /etc/mtab file contains all current mounted devices
+    const std::string mtab_file_name = "/etc/mtab";
+
+    ifstream mtab_file;
+    mtab_file.open(mtab_file_name);
+    if (!mtab_file.is_open()) {
+        NOVA_LOG_ERROR("Couldn't open mtab file");
+        throw VolumeException(VolumeException::CHECK_IF_MOUNTED_FAILURE);
+    }
+
+    std::string line;
+    while(getline(mtab_file, line)) {
+        // if the mtab mount line has the device path then its mounted
+        if (line.find(path) != std::string::npos) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 
@@ -358,6 +385,8 @@ const char * VolumeException::what() const throw() {
             return "There was a failure checking the filesystem.";
         case RESIZE_FS_FAILURE:
             return "There was a failure resize filesystem.";
+        case CHECK_IF_MOUNTED_FAILURE:
+            return "There was a failure checking if the device is mounted.";
         default:
             return "An error occurred.";
     }
